@@ -1,5 +1,3 @@
-use std::borrow::Borrow;
-
 use unicode_segmentation::UnicodeSegmentation; // 1.10.1
 use regex::Regex; // 1.7.1
 
