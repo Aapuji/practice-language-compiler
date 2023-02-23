@@ -1,6 +1,6 @@
 use practice_language_compiler::lexer;
 
-const SRC: &str = r#"  "Hello World" "#;
+const SRC: &str = r#"   print"#;
 
 fn main() {
     let tokens = lexer::lex(&SRC);
