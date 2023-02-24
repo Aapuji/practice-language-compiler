@@ -29,10 +29,6 @@ impl Token {
   pub const EOF: Token = Token { kind: TokenKind::EOF, pos: None };
 }
 
-fn find_token(buffer: &str) -> Token {
-  todo!()
-}
-
 pub fn lex(src: &'static str) -> Vec<Token> {
   let id_rules = Regex::new("[_a-zA-Z][_a-zA-Z0-9]*").unwrap();
   let ops = ["+=", "==", "=", "+", "-", "*", "/", "(", ")", ";", "#"];
@@ -48,9 +44,9 @@ pub fn lex(src: &'static str) -> Vec<Token> {
   let mut stack: Vec<&str> = Vec::new();
 
   let mut line = 1;
-  let mut col = 0;
+  let mut col = 1;
   let mut line_start = 1;
-  let mut col_start = 0;
+  let mut col_start = 1;
 
   // Finds ident, keyword, or operator from word (ie. buffer)
   let token_from_word = |word: &'static str, line: u32, col: u32| -> Option<Token> {
@@ -75,7 +71,7 @@ pub fn lex(src: &'static str) -> Vec<Token> {
     None
   };
 
-  let mut slice_next = |start: usize, end: usize| &src[start..end];
+  let slice_next = |start: usize, end: usize| &src[start..=end];
 
   while ptr < len {
     println!("${}, {}: {}: {}$", ptr, buffer_start, graphemes[ptr], &buffer);
@@ -91,14 +87,15 @@ pub fn lex(src: &'static str) -> Vec<Token> {
 
     if substr == "\n" { // Check newline
       line += 1;
-      col = 0;
+      col = 1;
       
-      if let Some(&"\"") = last { // Check if it is in string, if so, still append it to buffer
-        buffer = slice_next(buffer_start, ptr);
-        
-      } else {
-        todo!();
+      match last {
+        Some(&"\"") => buffer = slice_next(buffer_start, ptr), // Check if in string. If so, add to buffer
+        Some(&"#") => { stack.pop(); () }, // Check if in single-line comment. If so, remove comment.
+        _ => todo!()
       }
+    } else if let Some(&"#") = last { // Check if text is in single-line comment.
+      ()
     } else if let Some(&"\"") = last { // Check if text is currently in string. 
       if substr == "\"" {
         tokens.push(Token {
@@ -110,10 +107,22 @@ pub fn lex(src: &'static str) -> Vec<Token> {
       } else {
         buffer = slice_next(buffer_start, ptr);
       }
-    } else if substr == "\"" { // Check if the character is a " and start string literal
+    } else if substr == "#" {
+      stack.push("#");
+    } else if substr == "\"" { // Check if the character is a " and start string literal.
       stack.push("\"");
-    } else if id_rules.is_match(substr) { // Find identifiers
-      buffer = &src[buffer_start..=ptr];
+      token_from_word(buffer, line_start, col_start);
+    } else if id_rules.is_match(substr) { // Find identifiers.
+      buffer = slice_next(buffer_start, ptr);
+    } else {
+      if !buffer.is_empty() {
+        let token = token_from_word(buffer, line_start, col_start);
+    
+        match token {
+          Some(tok) => tokens.push(tok),
+          None => ()
+        }
+      }
     }
 
     ptr += 1;
