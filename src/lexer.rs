@@ -19,7 +19,6 @@ pub enum TokenKind {
 }
 
 #[derive(Debug)]
-
 pub struct Token {
   pub kind: TokenKind,
   pub pos: Option<Position>
